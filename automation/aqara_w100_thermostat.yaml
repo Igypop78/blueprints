@@ -1,0 +1,120 @@
+blueprint:
+  name: Aqara W100 – ovládanie termostatu
+  description: >-
+    Tlačidlami +/- na Aqara W100 (Zigbee2MQTT) mení cieľovú teplotu termostatu.
+    Jedno stlačenie = malý krok, dvojité = veľký krok. Cieľová teplota sa zapisuje
+    do externej teploty W100, takže ju LCD zobrazuje (workaround). Synchronizuje sa
+    pri každej zmene termostatu aj po štarte HA.
+  domain: automation
+  homeassistant:
+    min_version: 2024.10.0
+  author: Igypop78
+  source_url: https://github.com/Igypop78/blueprints/blob/main/automation/aqara_w100_thermostat.yaml
+  input:
+    w100_device:
+      name: Aqara W100
+      description: Zariadenie W100 zo Zigbee2MQTT
+      selector:
+        device:
+          filter:
+            - integration: mqtt
+    climate_entity:
+      name: Termostat
+      selector:
+        entity:
+          filter:
+            - domain: climate
+    display_entity:
+      name: Externá teplota W100 (zobrazenie na LCD)
+      description: napr. number.panel_kitchen_external_temperature
+      selector:
+        entity:
+          filter:
+            - domain: number
+    small_step:
+      name: Krok – jedno stlačenie
+      default: 0.5
+      selector:
+        number:
+          min: 0.1
+          max: 2
+          step: 0.1
+          unit_of_measurement: °C
+    big_step:
+      name: Krok – dvojité stlačenie
+      default: 1
+      selector:
+        number:
+          min: 0.5
+          max: 5
+          step: 0.5
+          unit_of_measurement: °C
+
+mode: queued
+max: 10
+
+variables:
+  climate: !input climate_entity
+  display: !input display_entity
+  small: !input small_step
+  big: !input big_step
+
+triggers:
+  - trigger: device
+    domain: mqtt
+    device_id: !input w100_device
+    type: action
+    subtype: single_plus
+    id: "+"
+  - trigger: device
+    domain: mqtt
+    device_id: !input w100_device
+    type: action
+    subtype: single_minus
+    id: "-"
+  - trigger: device
+    domain: mqtt
+    device_id: !input w100_device
+    type: action
+    subtype: double_plus
+    id: "++"
+  - trigger: device
+    domain: mqtt
+    device_id: !input w100_device
+    type: action
+    subtype: double_minus
+    id: "--"
+  - trigger: state
+    entity_id: !input climate_entity
+    attribute: temperature
+    id: sync
+  - trigger: homeassistant
+    event: start
+    id: sync
+
+actions:
+  - if:
+      - condition: trigger
+        id: sync
+    then:
+      - condition: template
+        value_template: "{{ state_attr(climate, 'temperature') is number }}"
+      - action: number.set_value
+        target:
+          entity_id: "{{ display }}"
+        data:
+          value: "{{ state_attr(climate, 'temperature') | float | round(1) }}"
+    else:
+      - variables:
+          delta: "{{ {'+': small, '-': -small, '++': big, '--': -big}[trigger.id] | float }}"
+          t: "{{ state_attr(climate, 'temperature') | float(20) }}"
+          lo: "{{ state_attr(climate, 'min_temp') | float(5) }}"
+          hi: "{{ state_attr(climate, 'max_temp') | float(30) }}"
+      - action: climate.set_temperature
+        target:
+          entity_id: "{{ climate }}"
+        data:
+          temperature: "{{ [lo, [hi, t + delta] | min] | max }}"
+      # počkať, kým termostat prevezme novú hodnotu (rýchle opakované stlačenia)
+      - wait_template: "{{ state_attr(climate, 'temperature') | float(0) != t }}"
+        timeout: "00:00:02"
