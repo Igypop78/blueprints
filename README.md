@@ -55,3 +55,30 @@ do ďalšieho otvorenia/zatvorenia.
 
 **Ručný import:** Nastavenia → Automatizácie a scény → Blueprinty → Importovať blueprint →
 `https://github.com/Igypop78/blueprints/blob/main/automation/kurenie_otvorene_okno.yaml`
+
+## Kúrenie – prikúrenie izieb pri štarte kotla
+
+[![Importovať blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/create-link/?redirect=blueprint_import&blueprint_url=https%3A%2F%2Fgithub.com%2FIgypop78%2Fblueprints%2Fblob%2Fmain%2Fautomation%2Fkurenie_prikurenie_pri_starte_kotla.yaml)
+
+Keď sa zapne kotol, krátko zvýši cieľovú teplotu všetkých zapnutých termostatov a hneď ju vráti.
+Izby, ktorým do cieľa chýba len kúsok, sa zapnú spolu s ostatnými a dokúria sa naraz – kotol
+potom zbytočne necykluje kvôli jednej izbe. Hodí sa pre `generic_thermostat` s hlavicami on/off.
+
+- Vypnuté termostaty (napr. kvôli otvorenému oknu) preskočí.
+- Pôvodné teploty si zapamätá na začiatku a vráti presne tie.
+
+**Požiadavky**
+- Home Assistant 2024.10 alebo novší
+- spínač kotla (`switch` / `input_boolean`) a `climate` termostaty
+
+**Vstupy**
+| Vstup | Popis |
+|---|---|
+| Kotol | spínač kotla |
+| Termostaty | termostaty izieb (viac naraz) |
+| Zvýšenie cieľovej teploty | predvolene 0,5 °C |
+| Počkať po zapnutí kotla | predvolene 10 s |
+| Ako dlho držať zvýšenú teplotu | predvolene 5 s |
+
+**Ručný import:** Nastavenia → Automatizácie a scény → Blueprinty → Importovať blueprint →
+`https://github.com/Igypop78/blueprints/blob/main/automation/kurenie_prikurenie_pri_starte_kotla.yaml`
