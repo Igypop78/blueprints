@@ -25,3 +25,33 @@ do externej teploty W100, takže ju LCD zobrazuje.
 
 **Ručný import:** Nastavenia → Automatizácie a scény → Blueprinty → Importovať blueprint →
 `https://github.com/Igypop78/blueprints/blob/main/automation/aqara_w100_thermostat.yaml`
+
+## Kúrenie – otvorené okno
+
+[![Importovať blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/create-link/?redirect=blueprint_import&blueprint_url=https%3A%2F%2Fgithub.com%2FIgypop78%2Fblueprints%2Fblob%2Fmain%2Fautomation%2Fkurenie_otvorene_okno.yaml)
+
+Pri otvorenom okne alebo dverách vypne termostat izby a po zatvorení ho vráti na `heat`.
+Jedna automatizácia = jedna izba, každá s vlastnými časmi.
+
+- Okno otvorené dlhšie ako *X* → termostat `off`.
+- Okno zatvorené dlhšie ako *Y* → termostat späť na `heat`, **len ak sa vypol počas otvoreného okna**.
+  Termostat, ktorý si vypol ručne ešte pred otvorením okna, ostane vypnutý.
+- Po štarte HA: ak je okno otvorené a termostat kúri, vypne ho.
+
+**Požiadavky**
+- Home Assistant 2024.10 alebo novší
+- `binary_sensor` okna/dverí a `climate` termostat s režimami `heat` / `off` (napr. generic_thermostat)
+
+**Vstupy**
+| Vstup | Popis |
+|---|---|
+| Okno / dvere | `binary_sensor` (on = otvorené) |
+| Termostat | `climate` entita izby |
+| Vypnúť kúrenie po otvorení na | predvolene 2 min |
+| Zapnúť kúrenie po zatvorení na | predvolene 10 min |
+
+**Obmedzenie:** ak sa HA reštartuje počas čakania po zatvorení okna, termostat ostane vypnutý
+do ďalšieho otvorenia/zatvorenia.
+
+**Ručný import:** Nastavenia → Automatizácie a scény → Blueprinty → Importovať blueprint →
+`https://github.com/Igypop78/blueprints/blob/main/automation/kurenie_otvorene_okno.yaml`

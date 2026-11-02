@@ -1,0 +1,97 @@
+blueprint:
+  name: Kúrenie – otvorené okno
+  description: >-
+    Okno/dvere otvorené dlhšie ako zadaný čas → termostat izby sa vypne (hvac_mode off).
+    Zatvorené dlhšie ako zadaný čas → termostat späť na heat, ale len ak sa vypol počas
+    otvoreného okna (termostat vypnutý ručne skôr ostane vypnutý). Po štarte HA vypne
+    termostat, ak je okno otvorené. Jedna automatizácia = jedna izba.
+  domain: automation
+  homeassistant:
+    min_version: 2024.10.0
+  author: Igypop78
+  source_url: https://github.com/Igypop78/blueprints/blob/main/automation/kurenie_otvorene_okno.yaml
+  input:
+    okno:
+      name: Okno / dvere
+      description: Senzor okna alebo dverí (on = otvorené)
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+    termostat:
+      name: Termostat
+      description: Termostat izby (climate)
+      selector:
+        entity:
+          filter:
+            - domain: climate
+    otvorene_po:
+      name: Vypnúť kúrenie po otvorení na
+      default:
+        minutes: 2
+      selector:
+        duration: {}
+    zatvorene_po:
+      name: Zapnúť kúrenie po zatvorení na
+      default:
+        minutes: 10
+      selector:
+        duration: {}
+
+variables:
+  termostat: !input termostat
+
+triggers:
+  - trigger: state
+    entity_id: !input okno
+    from: "off"
+    to: "on"
+    for: !input otvorene_po
+    id: otvorene
+  - trigger: state
+    entity_id: !input okno
+    from: "on"
+    to: "off"
+    for: !input zatvorene_po
+    id: zatvorene
+  - trigger: homeassistant
+    event: start
+    id: start
+
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id:
+              - otvorene
+              - start
+          - condition: state
+            entity_id: !input okno
+            state: "on"
+          - condition: state
+            entity_id: !input termostat
+            state: heat
+        sequence:
+          - action: climate.set_hvac_mode
+            target:
+              entity_id: !input termostat
+            data:
+              hvac_mode: "off"
+      - conditions:
+          - condition: trigger
+            id: zatvorene
+          - condition: state
+            entity_id: !input termostat
+            state: "off"
+          # termostat sa vypol až počas otvoreného okna (60 s rezerva), nie ručne pred ním
+          - condition: template
+            value_template: >-
+              {{ as_timestamp(expand(termostat)[0].last_changed)
+                 >= as_timestamp(trigger.from_state.last_changed) - 60 }}
+        sequence:
+          - action: climate.set_hvac_mode
+            target:
+              entity_id: !input termostat
+            data:
+              hvac_mode: heat
+mode: queued
