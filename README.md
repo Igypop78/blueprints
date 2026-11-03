@@ -34,9 +34,10 @@ Pri otvorenom okne alebo dverách vypne termostat izby a po zatvorení ho vráti
 Jedna automatizácia = jedna izba, každá s vlastnými časmi.
 
 - Okno otvorené dlhšie ako *X* → termostat `off`.
-- Okno zatvorené dlhšie ako *Y* → termostat späť na `heat`, **len ak sa vypol počas otvoreného okna**.
-  Termostat, ktorý si vypol ručne ešte pred otvorením okna, ostane vypnutý.
+- Okno zatvorené dlhšie ako *Y* → termostat späť na `heat`, ak je vypnutý a **nevypol ho ručne používateľ**
+  v HA (dashboard, aplikácia – zmena s používateľom). Funguje aj po reštarte HA a pri opakovanom otváraní.
 - Po štarte HA: ak je okno otvorené a termostat kúri, vypne ho.
+- Ukladá 20 posledných spustení (trace) na ľahšie dohľadanie.
 
 **Požiadavky**
 - Home Assistant 2024.10 alebo novší
@@ -50,8 +51,11 @@ Jedna automatizácia = jedna izba, každá s vlastnými časmi.
 | Vypnúť kúrenie po otvorení na | predvolene 2 min |
 | Zapnúť kúrenie po zatvorení na | predvolene 10 min |
 
-**Obmedzenie:** ak sa HA reštartuje počas čakania po zatvorení okna, termostat ostane vypnutý
-do ďalšieho otvorenia/zatvorenia.
+**Obmedzenia**
+- Termostat, ktorý vypla iná automatizácia (alebo ručne cez fyzický panel ovládaný automatizáciou),
+  sa po zatvorení okna znova zapne.
+- Ručné vypnutie pred reštartom HA sa po reštarte nepozná – po zatvorení okna sa termostat zapne.
+- Ak sa HA reštartuje počas čakania po zatvorení okna, termostat ostane vypnutý do ďalšieho otvorenia/zatvorenia.
 
 **Ručný import:** Nastavenia → Automatizácie a scény → Blueprinty → Importovať blueprint →
 `https://github.com/Igypop78/blueprints/blob/main/automation/kurenie_otvorene_okno.yaml`

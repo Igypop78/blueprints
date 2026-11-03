@@ -2,9 +2,9 @@ blueprint:
   name: Kúrenie – otvorené okno
   description: >-
     Okno/dvere otvorené dlhšie ako zadaný čas → termostat izby sa vypne (hvac_mode off).
-    Zatvorené dlhšie ako zadaný čas → termostat späť na heat, ale len ak sa vypol počas
-    otvoreného okna (termostat vypnutý ručne skôr ostane vypnutý). Po štarte HA vypne
-    termostat, ak je okno otvorené. Jedna automatizácia = jedna izba.
+    Zatvorené dlhšie ako zadaný čas → termostat späť na heat, ak je vypnutý a nevypol ho
+    ručne používateľ cez HA (dashboard, aplikácia). Po štarte HA vypne termostat, ak je okno
+    otvorené. Jedna automatizácia = jedna izba.
   domain: automation
   homeassistant:
     min_version: 2024.10.0
@@ -83,11 +83,9 @@ actions:
           - condition: state
             entity_id: !input termostat
             state: "off"
-          # termostat sa vypol až počas otvoreného okna (60 s rezerva), nie ručne pred ním
+          # termostat nevypol ručne používateľ (zmena bez user_id = automatizácia alebo obnovenie po štarte)
           - condition: template
-            value_template: >-
-              {{ as_timestamp(expand(termostat)[0].last_changed)
-                 >= as_timestamp(trigger.from_state.last_changed) - 60 }}
+            value_template: "{{ expand(termostat)[0].context.user_id is none }}"
         sequence:
           - action: climate.set_hvac_mode
             target:
@@ -95,3 +93,5 @@ actions:
             data:
               hvac_mode: heat
 mode: queued
+trace:
+  stored_traces: 20
